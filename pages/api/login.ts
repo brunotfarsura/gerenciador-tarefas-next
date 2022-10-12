@@ -2,6 +2,7 @@ import type {NextApiRequest, NextApiResponse} from 'next';
 import { connectDB } from '../../middlewares/connectDB';
 import md5 from 'md5';
 import { UserModel } from '../../models/userModel';
+import jwt from 'jsonwebtoken';
 
 type LoginRequest = {
     login: string
@@ -29,9 +30,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<any>) => {
             );
         }
 
+        const{JWT_SECRET} = process.env;
+        if(!JWT_SECRET){
+            return res.status(500).json({
+                error: 'JWT não encontrado'
+            });
+        }
+
         const existsUser = await UserModel.find({email: dados.login, password: md5(dados.password)});
         if(existsUser && existsUser.length > 0){
-            return res.status(200).json(existsUser);
+            const user = existsUser[0];
+            const token = jwt.sign({_id: user._id}, JWT_SECRET);
+
+            res.status(200).json({name: user.name, email: user.email, token});
         }
         return res.status(400).json({error : 'Login e senha não conferem'});
 
