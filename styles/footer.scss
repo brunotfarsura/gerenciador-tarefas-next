@@ -11,25 +11,27 @@
         display: none;
     }
 
-    button{
+    button {
         display: flex;
         background-color: $lightGreyColor;
-        border: 1px solid $primaryColor;
+        border: 1px solid  $primaryColor;
         border-radius: 12px;
         width: 96%;
         min-height: 40px;
         color: $primaryColor;
         font-size: 16px;
         align-items: center;
+        margin-bottom: 10px;
 
         img{
             margin-right: 15px;
         }
     }
-
     
+
     @media screen and (min-width: $mediaQueryDesktop) {
         border-top: 1px solid $lightGreyColor;
+        padding: 15px;    
 
         button{
             display: none;
@@ -39,7 +41,7 @@
             display: block;
             font-size: 14px;
             color: $primaryColor;
+
         }
     }
 }
-

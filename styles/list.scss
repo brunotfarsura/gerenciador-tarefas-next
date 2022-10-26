@@ -8,6 +8,10 @@
     align-items: center;
     justify-content: center;
 
+    &.not-empty{
+        justify-content: flex-start;
+    }
+
     img{
         width: 280px;
     }
