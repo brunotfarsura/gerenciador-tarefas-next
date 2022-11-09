@@ -1,73 +1,57 @@
 import type {NextApiRequest, NextApiResponse} from 'next';
-import { connectDB } from '../../middlewares/connectDB';
 import md5 from 'md5';
 import { DefaultResponseMsg } from '../../types/DefaultResponseMsg';
-import { UserModel } from '../../models/userModel';
-
-type CadastroRequest = {
-    name: string,
-    email: string,
-    password: string
-}
+import { UserModel } from '../../models/UserModel';
+import connectDB from '../../middlewares/connectDB';
+import { Cadastro } from '../../types/Cadastro';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<DefaultResponseMsg>) => {
+    
     try{
         if(req.method !== 'POST'){
-            return res.status(405).json(
-                {
-                    error: 'Metodo não existente'
-                }
-            )
+            res.status(400).json({ error: 'Metodo solicitado nao existe '});
+            return;
         }
 
-        const {body} = req;
-        const dados = body as CadastroRequest;
-
-        if(!dados.email || !dados.password || !dados.name){
-            return res.status(400).json(
-                {
-                    error: 'Favor preencher os campos obrigatórios'
-                }
-            );
-        }
-
-        if(!dados.name || dados.name.length < 2){
-            return res.status(400).json({error: 'Nome inválido'});
-        }
-
-        if(isEmailValid(dados)){
-            return res.status(400).json({error: 'Email inválido'});
-        }
-
-        if(isPasswordValid(dados)){
-            return res.status(400).json({error: 'Senha inválida'});
-        }
-
-        const existsUser = await UserModel.find({email: dados.email});
-        if(existsUser && existsUser.length > 0){
-            return res.status(400).json({error: 'Já existe uma conta com os dados informados'});
-        }
-
-        dados.password = md5(dados.password);
-        await UserModel.create(dados);
-
-        return res.status(201).json(
-            {
-                msg: 'Cadastro efetuado com sucesso'
+        if(req.body){
+            const user = req.body as Cadastro;
+            if(!user.name || user.name.length < 3){
+                res.status(400).json({ error: 'Nome do usuario invalido'});
+                return;
             }
-        );
-    } catch(e: any){
-        console.log('Erro ao efetuar o cadastro', e);
-    }
 
-    function isPasswordValid(dados: CadastroRequest) {
-        const regexPassword = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])([a-zA-Z0-9]{8,})$/;
-        return !regexPassword.test(dados.password);
-    }
+            if(!user.email || !user.email.includes('@') || !user.email.includes('.')
+                || user.email.length < 4){
+                res.status(400).json({ error: 'Email do usuario invalido'});
+                return;
+            }
 
-    function isEmailValid(dados: CadastroRequest) {
-        const regexEmail = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-        return !regexEmail.test(dados.email);
+            var strongRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})");
+            if(!strongRegex.test(user.password)){
+                res.status(400).json({ error: 'Senha do usuario invalida'});
+                return;
+            }
+
+            const existingUser = await UserModel.find({email : user.email});
+            if(existingUser && existingUser.length > 0){
+                res.status(400).json({ error: 'Ja existe usuario com o email informado'});
+                return;
+            }
+
+            const final = {
+                ...user,
+                password : md5(user.password)
+            }
+
+            await UserModel.create(final);
+            res.status(200).json({msg: 'Usuario adicionado com sucesso'});
+            return;
+        }
+
+        res.status(400).json({error: 'Parametros de entrada invalidos'});
+    }catch(e){
+        console.log('Ocorreu erro ao criar usuario: ', e);
+        res.status(500).json({ error: 'Ocorreu erro ao criar usuario, tente novamente '});
     }
 }
 
